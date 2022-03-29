@@ -61,6 +61,8 @@ let animator = new Animator(ifs, animateButton, warning, iterationsHTML);
      * Reset the IFS. Resets both the ifs itself as well as the canvas and animator.
      */
     function resetIFS() {
+        // If the animation is running, stop it.
+        if (animator.isAnimating()) animator.toggleAnimation();
         ifs = new DeterministicIFS(fractalCanvas, affineTable, 0, 1);
         animator = new Animator(ifs, animateButton, warning, iterationsHTML);
         iterationsHTML.innerHTML = "Iterations: 0";

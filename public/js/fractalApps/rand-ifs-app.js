@@ -41,6 +41,8 @@ let animator = new Animator(ifs, animateButton, "", iterationsHTML);
  * Reset the IFS, animator, fractal canvas, and iterations tag.
  */
 function resetIFS() {
+    if (animator.isAnimating())
+        animator.toggleAnimation();
     ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), 0, 1);
     animator = new Animator(ifs, animateButton, "", iterationsHTML);
     ctx.clearRect(0, 0, fractalCanvas.height, fractalCanvas.width);
