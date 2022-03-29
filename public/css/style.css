@@ -1,0 +1,13 @@
+.color-button {
+    display: inline-block;
+    height: 30px;
+    width: 30px;
+}
+
+.vertical-center {
+  min-height: 100%;  
+  min-height: 100vh; 
+
+  display: flex;
+  align-items: center;
+}
