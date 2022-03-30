@@ -21,18 +21,26 @@ export class DeterministicIFS {
     /**
      * The constructor for a DeterministicIFS. The parameters a and b give the region [a,b]^2 to draw the fractal in.
      */
-    constructor(canvas, affineTable, a, b) {
+    constructor(canvas, affineTable, window) {
         /* The current number of iterations. */
         this.numIters = 0;
         /* The delay (in ms) between applying each affine transform in animation. */
         this.AFFINE_DELAY = 220;
-        // The fill color for the initial drawing.
+        /* The fill color for the initial drawing. */
         this.START_COLOR = "blue";
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
         this.resetCanvas();
-        let affineTransforms = this.calibrateAffineTransforms(affineTable.collectTransforms(), a, b);
+        let affineTransforms = this.calibrateAffineTransforms(affineTable.collectTransforms());
         this.maxIters = this.computeMaxIterations(affineTransforms);
+        // Set the window bounds.
+        this.a1 = window.a1;
+        this.b1 = window.b1;
+        this.a2 = window.a2;
+        this.b2 = window.b2;
+        // Get the coordinates of the new origin.
+        this.x0 = ((-this.a1) / (this.b1 - this.a1)) * this.canvas.width;
+        this.y0 = ((-this.a2) / (this.b2 - this.a2)) * this.canvas.height;
         // Get an inverted matrix for each affine transform.
         this.invertedMatrices = [];
         affineTransforms.forEach(t => {
@@ -85,7 +93,6 @@ export class DeterministicIFS {
     buildAnimationFrames(currentImageData) {
         let newImageData = this.ctx.createImageData(this.canvas.width, this.canvas.height);
         var result = [];
-        console.log("started building frames");
         this.invertedMatrices.forEach(t => {
             // Get the result of applying the ith transform to the previous iteration.
             let transformed = this.getTransformedImageData(t, currentImageData);
@@ -94,7 +101,6 @@ export class DeterministicIFS {
             // Save a copy of newImageData after applying this transform to the results.
             result.push(new ImageData(new Uint8ClampedArray(newImageData.data), newImageData.width, newImageData.height));
         });
-        console.log("animation frames built");
         return result;
     } // buildAnimationFrames ()
     //==================================================================================================================
@@ -108,7 +114,7 @@ export class DeterministicIFS {
         for (var x = 0; x <= this.canvas.width; x++) {
             for (var y = 0; y <= this.canvas.height; y++) {
                 let coordTo = { x: x, y: y };
-                let coordFrom = DeterministicIFS.applyMatrix(transform, coordTo);
+                let coordFrom = this.invWindowTransform(DeterministicIFS.applyMatrix(transform, this.windowTransform(coordTo)));
                 coordTo.y = this.canvas.height - coordTo.y;
                 coordFrom.y = this.canvas.height - coordFrom.y;
                 // Check that inverse pixel is in the bounds of the ImageData.
@@ -125,6 +131,28 @@ export class DeterministicIFS {
         }
         return transformed;
     } // getTransformedImageData ()
+    //==================================================================================================================
+    //==================================================================================================================
+    /**
+     * Given a coordinate on the canvas, get the corresponding coordinate for the IFS' window.
+     */
+    windowTransform(c) {
+        return {
+            x: (c.x - this.x0) * (this.b1 - this.a1),
+            y: (c.y - this.y0) * (this.b2 - this.a2),
+        };
+    } // windowTransform ()
+    //==================================================================================================================
+    //==================================================================================================================
+    /**
+     * Given a coordinate with respect to the IFS' window, get the corresponding coordinate on the canvas.
+     */
+    invWindowTransform(c) {
+        return {
+            x: Math.floor((c.x / (this.b1 - this.a1)) + this.x0),
+            y: Math.floor((c.y / (this.b2 - this.a2)) + this.y0)
+        };
+    } // invWindowTransform ()
     //==================================================================================================================
     //==================================================================================================================
     /**
@@ -187,10 +215,12 @@ export class DeterministicIFS {
         for (var x = 0; x <= this.canvas.width; x++) {
             for (var y = 0; y <= this.canvas.height; y++) {
                 if (notTransparent({ x: x, y: y })) {
-                    cur = { minX: Math.min(x, cur.minX),
+                    cur = {
+                        minX: Math.min(x, cur.minX),
                         maxX: Math.max(x, cur.maxX),
                         minY: Math.min(y, cur.minY),
-                        maxY: Math.max(y, cur.maxY) };
+                        maxY: Math.max(y, cur.maxY)
+                    };
                 }
             }
         }
@@ -199,10 +229,9 @@ export class DeterministicIFS {
     //==================================================================================================================
     //==================================================================================================================
     /**
-     * "Calibrate" the affine transforms to the canvas size and window [a,b].
+     * "Calibrate" the affine transforms to the canvas size.
      */
-    calibrateAffineTransforms(affineTransforms, a, b) {
-        // For now, just assume window is unit square.
+    calibrateAffineTransforms(affineTransforms) {
         for (var i = 0; i < affineTransforms.length; i++) {
             affineTransforms[i].e = affineTransforms[i].e * this.canvas.width;
             affineTransforms[i].f = affineTransforms[i].f * this.canvas.height;
@@ -222,7 +251,7 @@ export class DeterministicIFS {
             x: Math.floor(matrix[0] * c.x + matrix[1] * c.y + matrix[4]),
             y: Math.floor(matrix[2] * c.x + matrix[3] * c.y + matrix[5])
         };
-    } // applyMatrix
+    } // applyMatrix ()
     //==================================================================================================================
     //==================================================================================================================
     /**

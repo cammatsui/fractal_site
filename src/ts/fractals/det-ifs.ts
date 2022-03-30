@@ -41,8 +41,19 @@ export class DeterministicIFS implements AnimatableFractal {
     /* The inverted affine matrices for this IFS. */
     readonly invertedMatrices: number[][];
 
-    // The fill color for the initial drawing.
+    /* The fill color for the initial drawing. */
     readonly START_COLOR = "blue";
+
+    /* The coordinates of the origin relative to the new window. */
+    private x0: number;
+    private y0: number;
+
+    /* The window coordinates. */
+    private a1: number;
+    private b1: number;
+    private a2: number;
+    private b2: number;
+
     //==================================================================================================================
 
 
@@ -55,14 +66,24 @@ export class DeterministicIFS implements AnimatableFractal {
     /**
      * The constructor for a DeterministicIFS. The parameters a and b give the region [a,b]^2 to draw the fractal in.
      */
-    constructor(canvas: HTMLCanvasElement, affineTable: AffineTable, a: number, b: number) {
+    constructor(canvas: HTMLCanvasElement, affineTable: AffineTable, window: any) {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d")!;
 
         this.resetCanvas();
 
-        let affineTransforms = this.calibrateAffineTransforms(affineTable.collectTransforms(), a, b);
+        let affineTransforms = this.calibrateAffineTransforms(affineTable.collectTransforms());
         this.maxIters = this.computeMaxIterations(affineTransforms);
+
+        // Set the window bounds.
+        this.a1 = window.a1;
+        this.b1 = window.b1;
+        this.a2 = window.a2;
+        this.b2 = window.b2;
+
+        // Get the coordinates of the new origin.
+        this.x0 = ((-this.a1)/(this.b1-this.a1))*this.canvas.width;
+        this.y0 = ((-this.a2)/(this.b2-this.a2))*this.canvas.height;
 
         // Get an inverted matrix for each affine transform.
         this.invertedMatrices = [];
@@ -128,18 +149,20 @@ export class DeterministicIFS implements AnimatableFractal {
         let newImageData = this.ctx.createImageData(this.canvas.width, this.canvas.height);
         var result: ImageData[] = [];
 
-        console.log("started building frames");
-
         this.invertedMatrices.forEach(t => {
             // Get the result of applying the ith transform to the previous iteration.
             let transformed = this.getTransformedImageData(t, currentImageData);
+
             // Layer the result on top of newImageData.
             newImageData = this.layerImageDatas(newImageData, transformed);
-            // Save a copy of newImageData after applying this transform to the results.
-            result.push(new ImageData(new Uint8ClampedArray(newImageData.data), newImageData.width, newImageData.height));
-        });
 
-        console.log("animation frames built");
+            // Save a copy of newImageData after applying this transform to the results.
+            result.push(new ImageData(
+                new Uint8ClampedArray(newImageData.data),
+                newImageData.width,
+                newImageData.height)
+            );
+        });
 
         return result;
     } // buildAnimationFrames ()
@@ -156,8 +179,14 @@ export class DeterministicIFS implements AnimatableFractal {
         // Apply inverse transform to each pixel on transformed ImageData.
         for (var x = 0; x <= this.canvas.width; x++) {
             for (var y = 0; y <= this.canvas.height; y++) {
-                let coordTo     = { x: x, y: y };
-                let coordFrom   = DeterministicIFS.applyMatrix(transform, coordTo);
+                let coordTo    = { x: x, y: y };
+
+                let coordFrom  = this.invWindowTransform(
+                    DeterministicIFS.applyMatrix(
+                        transform,
+                        this.windowTransform(coordTo)
+                    )
+                );
 
                 coordTo.y   = this.canvas.height - coordTo.y;
                 coordFrom.y = this.canvas.height - coordFrom.y;
@@ -180,6 +209,32 @@ export class DeterministicIFS implements AnimatableFractal {
 
         return transformed;
     } // getTransformedImageData ()
+    //==================================================================================================================
+
+
+    //==================================================================================================================
+    /**
+     * Given a coordinate on the canvas, get the corresponding coordinate for the IFS' window. 
+     */
+    private windowTransform(c: Coordinate): Coordinate {
+        return {
+            x: (c.x-this.x0)*(this.b1-this.a1),
+            y: (c.y-this.y0)*(this.b2-this.a2),
+        };
+    } // windowTransform ()
+    //==================================================================================================================
+
+
+    //==================================================================================================================
+    /**
+     * Given a coordinate with respect to the IFS' window, get the corresponding coordinate on the canvas.
+     */
+    private invWindowTransform(c: Coordinate) {
+        return {
+            x: Math.floor((c.x/(this.b1-this.a1))+this.x0),
+            y: Math.floor((c.y/(this.b2-this.a2))+this.y0)
+        };
+    } // invWindowTransform ()
     //==================================================================================================================
 
 
@@ -255,10 +310,12 @@ export class DeterministicIFS implements AnimatableFractal {
         for (var x = 0; x <= this.canvas.width; x++) {
             for (var y = 0; y <= this.canvas.height; y++) {
                 if (notTransparent({x: x, y: y})) {
-                    cur = { minX: Math.min(x, cur.minX), 
-                            maxX: Math.max(x, cur.maxX), 
-                            minY: Math.min(y, cur.minY), 
-                            maxY: Math.max(y, cur.maxY) };
+                    cur = { 
+                        minX: Math.min(x, cur.minX), 
+                        maxX: Math.max(x, cur.maxX), 
+                        minY: Math.min(y, cur.minY), 
+                        maxY: Math.max(y, cur.maxY)
+                    };
                 }
             }
         }
@@ -269,10 +326,9 @@ export class DeterministicIFS implements AnimatableFractal {
 
     //==================================================================================================================
     /**
-     * "Calibrate" the affine transforms to the canvas size and window [a,b].
+     * "Calibrate" the affine transforms to the canvas size.
      */
-    private calibrateAffineTransforms(affineTransforms: AffineTransform[], a: number, b: number) {
-        // For now, just assume window is unit square.
+    private calibrateAffineTransforms(affineTransforms: AffineTransform[]) {
         for (var i = 0; i < affineTransforms.length; i++) {
             affineTransforms[i].e = affineTransforms[i].e * this.canvas.width;
             affineTransforms[i].f = affineTransforms[i].f * this.canvas.height;
@@ -296,7 +352,7 @@ export class DeterministicIFS implements AnimatableFractal {
             x: Math.floor(matrix[0]*c.x + matrix[1]*c.y + matrix[4]),
             y: Math.floor(matrix[2]*c.x + matrix[3]*c.y + matrix[5])
         };
-    } // applyMatrix
+    } // applyMatrix ()
     //==================================================================================================================
 
 

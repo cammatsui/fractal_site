@@ -8,9 +8,9 @@
 import { DrawingCanvas } from './interfaces/drawing.js';
 import { DeterministicIFS } from '../fractals/det-ifs.js';
 import { presetIFS } from '../etc/preset-ifs.js';
-import { AffineTransform } from '../fractals/affine-transform.js';
 import { Animator } from '../etc/animation.js';
 import { AffineTable } from './interfaces/affine-table.js';
+import { WindowTable } from './interfaces/window-table.js';
 //======================================================================================================================
 
 
@@ -31,11 +31,12 @@ fractalCanvas.height = maxCanvasDimension;
 fractalCanvas.width = maxCanvasDimension;
 const fractalCtx = fractalCanvas.getContext("2d")!;
 
-// Setup the affine table.
+// Setup the affine table and window table.
 const affineTable = new AffineTable(<HTMLTableElement>document.getElementById("affineTable"));
+const windowTable = new WindowTable(<HTMLTableElement>document.getElementById("windowTable"));
 
 // Setup the fractal canvas' initial content and create the intial ifs.
-let ifs = new DeterministicIFS(fractalCanvas, affineTable, 0, 1);
+let ifs = new DeterministicIFS(fractalCanvas, affineTable, windowTable.getWindowBounds());
 
 // Setup the animation.
 let iterationsHTML: HTMLElement = document.getElementById("numIters")!;
@@ -63,7 +64,8 @@ let animator = new Animator(ifs, animateButton, warning, iterationsHTML);
     function resetIFS() {
         // If the animation is running, stop it.
         if (animator.isAnimating()) animator.toggleAnimation();
-        ifs = new DeterministicIFS(fractalCanvas, affineTable, 0, 1);
+        //ifs = new DeterministicIFS(fractalCanvas, affineTable, 0, 1);
+        ifs = new DeterministicIFS(fractalCanvas, affineTable, windowTable.getWindowBounds());
         animator = new Animator(ifs, animateButton, warning, iterationsHTML);
         iterationsHTML.innerHTML = "Iterations: 0";
     } // resetIFS ()
@@ -124,30 +126,31 @@ let animator = new Animator(ifs, animateButton, warning, iterationsHTML);
 
     //==================================================================================================================
     /**
-     * Load the preset ifs with the given name from the "presetIFS.js" file. 
+     * Load the preset with the given name from the "preset-ifs.js" file.
      */
-    function getPresetIFS(name: string): AffineTransform[] {
-        // By default, use the Sierpinski Gasket.
-        let ifs = presetIFS[0].ifs;
+    function getPreset(name: string) {
+        let preset = presetIFS[0];
 
-        presetIFS.every(preset => {
-            if (preset.name == name) {
-                ifs = preset.ifs;
+        presetIFS.every(presetEntry => {
+            if (presetEntry.name == name) {
+                preset = presetEntry;
                 return false;
             } 
             return true;
         });
-        return ifs;
-    } // getPresetIFS ()
+
+        return preset;
+    } // getPreset ()
     //==================================================================================================================
 
 
     //==================================================================================================================
     /**
-     * Set the table to a preset ifs. 
+     * Set the tables to a preset. 
      */
-    function setPresetIFS(ifs: AffineTransform[]) {
-        affineTable.applyPreset(ifs);
+    function setPresetIFS(preset: any) {
+        affineTable.applyPreset(preset.ifs);
+        windowTable.applyPreset(preset.window);
     } // setPresetIFS ()
     //==================================================================================================================
 
@@ -230,7 +233,7 @@ let animator = new Animator(ifs, animateButton, warning, iterationsHTML);
     var presetIFSOptions = document.getElementById("ifsDropDown")!;
     var options = Array.from(presetIFSOptions.getElementsByTagName("a"))!;
     options.forEach(option => {
-        option.onclick = () => setPresetIFS(getPresetIFS(option.innerHTML));
+        option.onclick = () => setPresetIFS(getPreset(option.innerHTML));
     });
 
     //==================================================================================================================
