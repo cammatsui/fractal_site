@@ -9,6 +9,7 @@ import { AffineTransform } from "./affine-transform.js";
 import { Coordinate } from "../types.js";
 import { AnimatableFractal } from "../etc/animation.js";
 import { AffineTable } from '../fractalApps/interfaces/affine-table.js';
+import { WindowCoordinates } from "../fractalApps/interfaces/window-table.js";
 //======================================================================================================================
 
 
@@ -66,7 +67,7 @@ export class DeterministicIFS implements AnimatableFractal {
     /**
      * The constructor for a DeterministicIFS. The parameters a and b give the region [a,b]^2 to draw the fractal in.
      */
-    constructor(canvas: HTMLCanvasElement, affineTable: AffineTable, window: any) {
+    constructor(canvas: HTMLCanvasElement, affineTable: AffineTable, window: WindowCoordinates) {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d")!;
 

@@ -5,7 +5,7 @@
  * @date February 2022.
  */
 // IMPORTS
-import { RandomIFS } from '../fractals/rand-ifs.js';
+import { RandomIFS } from '../fractals/rand-ifs-new.js';
 import { ProbabilityAffineTable } from './interfaces/affine-table.js';
 import { WindowTable } from './interfaces/window-table.js';
 import { Animator } from '../etc/animation.js';

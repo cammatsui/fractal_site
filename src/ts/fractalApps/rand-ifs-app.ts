@@ -8,8 +8,8 @@
 // IMPORTS
 import { RandomIFS } from '../fractals/rand-ifs.js';
 import { ProbabilityAffineTable } from './interfaces/affine-table.js';
+import { WindowTable } from './interfaces/window-table.js';
 import { Animator } from '../etc/animation.js';
-import { AffineTransform } from '../fractals/affine-transform.js';
 import { presetIFS } from '../etc/preset-ifs.js';
 //======================================================================================================================
 
@@ -27,14 +27,15 @@ fractalCanvas.height = maxDimension;
 fractalCanvas.width = maxDimension;
 const ctx = fractalCanvas.getContext("2d")!;
 
-// Setup the affine table.
-let affineTable = new ProbabilityAffineTable(<HTMLTableElement>document.getElementById("affineTable"));
+// Setup the affine table and window table.
+const affineTable = new ProbabilityAffineTable(<HTMLTableElement>document.getElementById("affineTable"));
+const windowTable = new WindowTable(<HTMLTableElement>document.getElementById("windowTable"));
 
 // Get the number of points.
 let pointsSlider = <HTMLInputElement>document.getElementById("dotsRange")!;
 
 // Create the ifs.
-let ifs : RandomIFS = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), 0, 1);
+let ifs : RandomIFS = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds());
 
 // Setup the animation.
 let iterationsHTML: HTMLElement = document.getElementById("numIters")!;
@@ -58,7 +59,7 @@ let animator = new Animator(ifs, animateButton, "", iterationsHTML);
     function resetIFS() {
         // If the animator is running, stop it.
         if (animator.isAnimating()) animator.toggleAnimation();
-        ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), 0, 1);
+        ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds());
         animator = new Animator(ifs, animateButton, "", iterationsHTML);
         ctx.clearRect(0, 0, fractalCanvas.height, fractalCanvas.width)
         iterationsHTML.innerHTML = "Iterations: 0";
@@ -78,30 +79,31 @@ let animator = new Animator(ifs, animateButton, "", iterationsHTML);
 
     //==================================================================================================================
     /**
-     * Load the preset ifs with the given name from the "presetIFS.js" file. 
+     * Load the preset with the given name from the "preset-ifs.js" file.
      */
-    function getPresetIFS(name: string): AffineTransform[] {
-        // By default, use the Sierpinski Gasket.
-        let ifs = presetIFS[0].ifs;
+    function getPreset(name: string) {
+        let preset = presetIFS[0];
 
-        presetIFS.every(preset => {
-            if (preset.name == name) {
-                ifs = preset.ifs;
+        presetIFS.every(presetEntry => {
+            if (presetEntry.name == name) {
+                preset = presetEntry;
                 return false;
             } 
             return true;
         });
-        return ifs;
-    } // getPresetIFS ()
+
+        return preset;
+    } // getPreset ()
     //==================================================================================================================
 
 
     //==================================================================================================================
     /**
-     * Set the table to a preset ifs. 
+     * Set the tables to a preset. 
      */
-    function setPresetIFS(ifs: AffineTransform[]) {
-        affineTable.applyPreset(ifs);
+    function setPresetIFS(preset: any) {
+        affineTable.applyPreset(preset.ifs);
+        windowTable.applyPreset(preset.window);
     } // setPresetIFS ()
     //==================================================================================================================
 
@@ -142,7 +144,7 @@ let animator = new Animator(ifs, animateButton, "", iterationsHTML);
     var presetIFSOptions = document.getElementById("ifsDropDown")!;
     var options = Array.from(presetIFSOptions.getElementsByTagName("a"))!;
     options.forEach(option => {
-        option.onclick = () => setPresetIFS(getPresetIFS(option.innerHTML));
+        option.onclick = () => setPresetIFS(getPreset(option.innerHTML));
     });
 
     //==================================================================================================================

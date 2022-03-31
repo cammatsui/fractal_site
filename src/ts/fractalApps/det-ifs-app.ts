@@ -64,7 +64,6 @@ let animator = new Animator(ifs, animateButton, warning, iterationsHTML);
     function resetIFS() {
         // If the animation is running, stop it.
         if (animator.isAnimating()) animator.toggleAnimation();
-        //ifs = new DeterministicIFS(fractalCanvas, affineTable, 0, 1);
         ifs = new DeterministicIFS(fractalCanvas, affineTable, windowTable.getWindowBounds());
         animator = new Animator(ifs, animateButton, warning, iterationsHTML);
         iterationsHTML.innerHTML = "Iterations: 0";

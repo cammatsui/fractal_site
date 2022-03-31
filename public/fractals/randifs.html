@@ -54,7 +54,7 @@
             <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Deterministic IFS Parameters</h5>
+                <h5 class="modal-title" id="exampleModalLabel">Random IFS Parameters</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
@@ -69,6 +69,13 @@
                                 <li><a class="dropdown-item" href="#">Sierpinski Gasket</a></li>
                                 <li><a class="dropdown-item" href="#">Sierpinski Carpet</a></li>
                                 <li><a class="dropdown-item" href="#">Koch Curve</a></li>
+                                <li><a class="dropdown-item" href="#">Tree</a></li>
+                                <li><a class="dropdown-item" href="#">Queen Anne's Lace</a></li>
+                                <li><a class="dropdown-item" href="#">Barnsley's Fern</a></li>
+                                <li><a class="dropdown-item" href="#">One-Arm Spiral</a></li>
+                                <li><a class="dropdown-item" href="#">Two-Arm Spiral</a></li>
+                                <li><a class="dropdown-item" href="#">Four-Arm Spiral 1</a></li>
+                                <li><a class="dropdown-item" href="#">Four-Arm Spiral 2</a></li>
                             </ul>
                         </div>
 
@@ -115,10 +122,35 @@
                             </tr>
                             </tbody>
                         </table>
+
+                        <div id="windowTableContainer" class="table-editable row justify-content-center" style="table-layout:fixed"></div>
+                            <div class="col-auto">
+                                <table id="windowTable" class="table table-bordered table-responsive table-sm table-striped text-center" style="margin: auto; width: 50%;">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center" style="width: 10%"></th>
+                                            <th class="text-center" style="width: 10%">x</th>
+                                            <th class="text-center" style="width: 10%">y</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="pt-3-half" style="width:10%">Min</td>
+                                            <td class="pt-3-half" contenteditable="true" style="width:10%">0</td>
+                                            <td class="pt-3-half" contenteditable="true" style="width:10%">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="pt-3-half" style="width:10%">Max</td>
+                                            <td class="pt-3-half" contenteditable="true" style="width:10%">1</td>
+                                            <td class="pt-3-half" contenteditable="true" style="width:10%">1</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                         </div>
 
                     </div>
-                </div>
 
                 <div class = "d-flex justify-content-center">
                     <input type="range" min="1" max="2000" value="50" id="dotsRange">
@@ -133,6 +165,7 @@
                 <a class="btn btn-primary mx-3" id="delRow">Delete Last Row</a>
                 <a class="btn btn-primary mx-3" id="resIFS" data-bs-dismiss="modal">Save and Reset</a>
                 </div>
+            </div>
             </div>
             </div>
         </div>

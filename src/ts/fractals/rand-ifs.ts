@@ -4,13 +4,12 @@
  * @author Cameron Matsui (cmatsui22@amherst.edu)
  * @date February 2022.
  */
-
-
 // IMPORTS
 import { AnimatableFractal } from "../etc/animation.js";
 import { ProbabilityAffineTable } from "../fractalApps/interfaces/affine-table.js";
 import { Coordinate } from "../types.js";
 import { AffineTransform } from "./affine-transform";
+import { WindowCoordinates } from "../fractalApps/interfaces/window-table.js";
 //======================================================================================================================
 
 
@@ -57,6 +56,16 @@ export class RandomIFS implements AnimatableFractal {
     /* The cooldown on animation, in ms. */
     readonly COOLDOWN = 500;
 
+    /* The coordinates of the origin relative to the new window. */
+    private x0: number;
+    private y0: number;
+
+    /* The window coordinates. */
+    private a1: number;
+    private b1: number;
+    private a2: number;
+    private b2: number;
+
     //==================================================================================================================
 
 
@@ -69,13 +78,23 @@ export class RandomIFS implements AnimatableFractal {
     /**
      * The constructor for the RandomIFS. 
      */
-    constructor(canvas: HTMLCanvasElement, table: ProbabilityAffineTable, numPoints: number, a: number, b: number) {
+    constructor(canvas: HTMLCanvasElement, table: ProbabilityAffineTable, numPts: number, window: WindowCoordinates) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d')!;
-        this.numPoints = numPoints;
+        this.numPoints = numPts;
 
-        // Set up
-        let affineTransforms = this.calibrateAffineTransforms(table.collectTransforms(), a, b);
+
+        // Set the window bounds.
+        this.a1 = window.a1;
+        this.b1 = window.b1;
+        this.a2 = window.a2;
+        this.b2 = window.b2;
+
+        // Get the coordinates of the new origin.
+        this.x0 = ((-this.a1)/(this.b1-this.a1))*this.canvas.width;
+        this.y0 = ((-this.a2)/(this.b2-this.a2))*this.canvas.height;
+
+        let affineTransforms = this.calibrateAffineTransforms(table.collectTransforms());
         this.transformProbs = table.collectProbabilities();
         this.matrices = RandomIFS.gatherMatrices(affineTransforms);
 
@@ -103,13 +122,14 @@ export class RandomIFS implements AnimatableFractal {
 
         while (true) {
             let randomPoint = { x: getRandomInt(this.canvas.width), y: getRandomInt(this.canvas.height) };
-            let transformedPoint = RandomIFS.applyMatrix(matrix, randomPoint);
+            let randomPointWindowTransformed = this.windowTransform(randomPoint)
+            let transformedPoint = RandomIFS.applyMatrix(matrix, randomPointWindowTransformed);
 
-            let distX = Math.abs(randomPoint.x - transformedPoint.x);
-            let distY = Math.abs(randomPoint.y - transformedPoint.y);
+            let distX = Math.abs(randomPointWindowTransformed.x - transformedPoint.x);
+            let distY = Math.abs(randomPointWindowTransformed.y - transformedPoint.y);
 
             if (distX <= this.POINT_TOLERANCE && distY <= this.POINT_TOLERANCE) {
-                return randomPoint;
+                return randomPointWindowTransformed;
             }
         }
     } // findFixedPointStochastic ()
@@ -118,9 +138,9 @@ export class RandomIFS implements AnimatableFractal {
 
     //==================================================================================================================
     /**
-     * "Calibrate" the affine transforms to the canvas size and window [a,b].
+     * "Calibrate" the affine transforms to the canvas size.
      */
-    private calibrateAffineTransforms(affineTransforms: AffineTransform[], a: number, b: number) {
+    private calibrateAffineTransforms(affineTransforms: AffineTransform[]) {
         // For now, just assume window is unit square.
         for (var i = 0; i < affineTransforms.length; i++) {
             affineTransforms[i].e = affineTransforms[i].e * this.canvas.width;
@@ -175,11 +195,40 @@ export class RandomIFS implements AnimatableFractal {
 
     //==================================================================================================================
     /**
+     * Given a coordinate on the canvas, get the corresponding coordinate for the IFS' window. 
+     */
+    private windowTransform(c: Coordinate): Coordinate {
+        return {
+            x: (c.x-this.x0)*(this.b1-this.a1),
+            y: (c.y-this.y0)*(this.b2-this.a2),
+        };
+    } // windowTransform ()
+    //==================================================================================================================
+
+
+    //==================================================================================================================
+    /**
+     * Given a coordinate with respect to the IFS' window, get the corresponding coordinate on the canvas.
+     */
+    private invWindowTransform(c: Coordinate) {
+        return {
+            x: Math.floor((c.x/(this.b1-this.a1))+this.x0),
+            y: Math.floor((c.y/(this.b2-this.a2))+this.y0)
+        };
+    } // invWindowTransform ()
+    //==================================================================================================================
+
+
+
+
+    //==================================================================================================================
+    /**
      * Draw the current point onto the canvas.
      */
     private drawCurrentPoint() {
+        let pointInWindow = this.invWindowTransform(this.currentPoint);
         this.ctx.fillStyle = "black";
-        this.ctx.fillRect(this.currentPoint.x, this.canvas.height - this.currentPoint.y, 2, 2);
+        this.ctx.fillRect(pointInWindow.x, this.canvas.height - pointInWindow.y, 2, 2);
     } // drawCurrentPoint ()
     //==================================================================================================================
 

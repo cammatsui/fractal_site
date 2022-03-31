@@ -43,7 +43,7 @@ export class WindowTable {
     /**
      * Set a preset for the table. 
      */
-    public applyPreset(preset: any) {
+    public applyPreset(preset: WindowCoordinates) {
         let minRow = this.table.rows[1];
         let maxRow = this.table.rows[2];
 
@@ -61,7 +61,7 @@ export class WindowTable {
     /**
      * Get the window bounds from the table. 
      */
-    public getWindowBounds() {
+    public getWindowBounds(): WindowCoordinates {
         let minRow = this.table.rows[1];
         let maxRow = this.table.rows[2];
 
@@ -99,4 +99,17 @@ export class WindowTable {
 
 //======================================================================================================================
 } // class WindowTable
+//======================================================================================================================
+
+
+//======================================================================================================================
+/**
+ * A type which specifies the coordinates of the window for an IFS.
+ */
+export type WindowCoordinates = {
+    a1: number;
+    b1: number,
+    a2: number,
+    b2: number
+} // type WindowCoordinates
 //======================================================================================================================
