@@ -27,7 +27,7 @@ const windowTable = new WindowTable(document.getElementById("windowTable"));
 // Get the number of points.
 let pointsSlider = document.getElementById("dotsRange");
 // Create the ifs.
-let ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds());
+let ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds(), shouldUseFixedPoint());
 // Setup the animation.
 let iterationsHTML = document.getElementById("numIters");
 let animateButton = document.getElementById("animate");
@@ -46,7 +46,7 @@ function resetIFS() {
     // If the animator is running, stop it.
     if (animator.isAnimating())
         animator.toggleAnimation();
-    ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds());
+    ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds(), shouldUseFixedPoint());
     animator = new Animator(ifs, animateButton, "", iterationsHTML);
     ctx.clearRect(0, 0, fractalCanvas.height, fractalCanvas.width);
     iterationsHTML.innerHTML = "Iterations: 0";
@@ -84,6 +84,15 @@ function setPresetIFS(preset) {
     affineTable.applyPreset(preset.ifs);
     windowTable.applyPreset(preset.window);
 } // setPresetIFS ()
+//==================================================================================================================
+//==================================================================================================================
+/**
+ * Whether to use a fixed point to start the Random IFS.
+ */
+function shouldUseFixedPoint() {
+    let checkBox = document.getElementById('useFixed');
+    return checkBox.checked;
+} // shouldUseFixedPoint ()
 //==================================================================================================================
 //======================================================================================================================
 // END BUTTON FUNCTIONS & HELPERS

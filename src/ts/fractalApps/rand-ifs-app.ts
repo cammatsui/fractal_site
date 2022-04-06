@@ -35,7 +35,8 @@ const windowTable = new WindowTable(<HTMLTableElement>document.getElementById("w
 let pointsSlider = <HTMLInputElement>document.getElementById("dotsRange")!;
 
 // Create the ifs.
-let ifs : RandomIFS = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds());
+let ifs : RandomIFS = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds(),
+                                    shouldUseFixedPoint());
 
 // Setup the animation.
 let iterationsHTML: HTMLElement = document.getElementById("numIters")!;
@@ -59,7 +60,8 @@ let animator = new Animator(ifs, animateButton, "", iterationsHTML);
     function resetIFS() {
         // If the animator is running, stop it.
         if (animator.isAnimating()) animator.toggleAnimation();
-        ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds());
+        ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds(), 
+                            shouldUseFixedPoint());
         animator = new Animator(ifs, animateButton, "", iterationsHTML);
         ctx.clearRect(0, 0, fractalCanvas.height, fractalCanvas.width)
         iterationsHTML.innerHTML = "Iterations: 0";
@@ -105,6 +107,17 @@ let animator = new Animator(ifs, animateButton, "", iterationsHTML);
         affineTable.applyPreset(preset.ifs);
         windowTable.applyPreset(preset.window);
     } // setPresetIFS ()
+    //==================================================================================================================
+
+
+    //==================================================================================================================
+    /**
+     * Whether to use a fixed point to start the Random IFS.
+     */
+    function shouldUseFixedPoint() {
+        let checkBox = <HTMLInputElement>document.getElementById('useFixed')!;
+        return checkBox.checked;
+    } // shouldUseFixedPoint ()
     //==================================================================================================================
 
 

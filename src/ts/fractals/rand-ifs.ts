@@ -81,7 +81,8 @@ export class RandomIFS implements AnimatableFractal {
     /**
      * The constructor for the RandomIFS. 
      */
-    constructor(canvas: HTMLCanvasElement, table: ProbabilityAffineTable, numPts: number, window: WindowCoordinates) {
+    constructor(canvas: HTMLCanvasElement, table: ProbabilityAffineTable, numPts: number, window: WindowCoordinates,
+        useFixed: Boolean) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d')!;
         this.numPoints = numPts;
@@ -101,7 +102,7 @@ export class RandomIFS implements AnimatableFractal {
         this.transformProbs = table.collectProbabilities();
         this.matrices = RandomIFS.gatherMatrices(affineTransforms);
 
-        this.currentPoint = this.findFixedPointStochastic();
+        this.currentPoint = useFixed ? this.findFixedPointStochastic() : this.findNonFixedPointStochastic();
     } // constructor ()
     //==================================================================================================================
 
@@ -113,6 +114,35 @@ export class RandomIFS implements AnimatableFractal {
     public calculateCooldown(): number {
         return this.COOLDOWN
     } // calculateCooldown ()
+    //==================================================================================================================
+
+
+    //==================================================================================================================
+    /**
+     * Randomly find a non-fixed point of a random matrix.
+     */
+    private findNonFixedPointStochastic(): Coordinate {
+
+        function getRandomInt(max: number) { return Math.floor(Math.random() * max) }
+
+        while (true) {
+            let matrix = this.randomMatrix();
+
+            for (var i = 0; i < this.FIXED_PT_TRIES; i++) {
+                let randomPoint = { x: getRandomInt(this.canvas.width), y: getRandomInt(this.canvas.height) };
+                let randomPointWindowTransformed = this.windowTransform(randomPoint)
+                let transformedPoint = RandomIFS.applyMatrix(matrix, randomPointWindowTransformed);
+
+                let distX = Math.abs(randomPointWindowTransformed.x - transformedPoint.x);
+                let distY = Math.abs(randomPointWindowTransformed.y - transformedPoint.y);
+
+                if (distX > this.POINT_TOLERANCE && distY > this.POINT_TOLERANCE) {
+                    return randomPointWindowTransformed;
+                }
+            }
+        }
+
+    } // findFixedPointStochastic ()
     //==================================================================================================================
 
 
