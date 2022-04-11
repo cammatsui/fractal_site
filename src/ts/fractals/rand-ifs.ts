@@ -47,6 +47,9 @@ export class RandomIFS implements AnimatableFractal {
     /* The current number of iterations. */
     numIters = 0;
 
+    /* The number of points draw. */
+    private pointsDrawn = 0;
+
     /* The max number of iterations. We allow the random ifs to be iterated infinitely. */
     readonly maxIters = Number.MAX_VALUE;
 
@@ -72,7 +75,7 @@ export class RandomIFS implements AnimatableFractal {
     //==================================================================================================================
 
 
-    //==================================================================================================================
+    //============================================================================================================================================================================
     // INSTANCE METHODS
     //==================================================================================================================
 
@@ -82,7 +85,8 @@ export class RandomIFS implements AnimatableFractal {
      * The constructor for the RandomIFS. 
      */
     constructor(canvas: HTMLCanvasElement, table: ProbabilityAffineTable, numPts: number, window: WindowCoordinates,
-        useFixed: Boolean) {
+        startingPoint: any) {
+
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d')!;
         this.numPoints = numPts;
@@ -102,7 +106,8 @@ export class RandomIFS implements AnimatableFractal {
         this.transformProbs = table.collectProbabilities();
         this.matrices = RandomIFS.gatherMatrices(affineTransforms);
 
-        this.currentPoint = useFixed ? this.findFixedPointStochastic() : this.findNonFixedPointStochastic();
+        this.currentPoint = startingPoint == null ? this.findFixedPointStochastic() : startingPoint;
+
     } // constructor ()
     //==================================================================================================================
 
@@ -114,35 +119,6 @@ export class RandomIFS implements AnimatableFractal {
     public calculateCooldown(): number {
         return this.COOLDOWN
     } // calculateCooldown ()
-    //==================================================================================================================
-
-
-    //==================================================================================================================
-    /**
-     * Randomly find a non-fixed point of a random matrix.
-     */
-    private findNonFixedPointStochastic(): Coordinate {
-
-        function getRandomInt(max: number) { return Math.floor(Math.random() * max) }
-
-        while (true) {
-            let matrix = this.randomMatrix();
-
-            for (var i = 0; i < this.FIXED_PT_TRIES; i++) {
-                let randomPoint = { x: getRandomInt(this.canvas.width), y: getRandomInt(this.canvas.height) };
-                let randomPointWindowTransformed = this.windowTransform(randomPoint)
-                let transformedPoint = RandomIFS.applyMatrix(matrix, randomPointWindowTransformed);
-
-                let distX = Math.abs(randomPointWindowTransformed.x - transformedPoint.x);
-                let distY = Math.abs(randomPointWindowTransformed.y - transformedPoint.y);
-
-                if (distX > this.POINT_TOLERANCE && distY > this.POINT_TOLERANCE) {
-                    return randomPointWindowTransformed;
-                }
-            }
-        }
-
-    } // findFixedPointStochastic ()
     //==================================================================================================================
 
 
@@ -198,8 +174,13 @@ export class RandomIFS implements AnimatableFractal {
         this.numIters++;
 
         for (var i = 0; i < this.numPoints; i++) {
-            this.drawCurrentPoint();
+            if (this.pointsDrawn < 10) {
+                this.drawCurrentPointRed();
+            } else {
+                this.drawCurrentPoint();
+            }
             this.updateCurrentPoint();
+            this.pointsDrawn++;
         }
     } // iterate ()
     //==================================================================================================================
@@ -258,13 +239,23 @@ export class RandomIFS implements AnimatableFractal {
     //==================================================================================================================
 
 
+    //==================================================================================================================
+    /**
+     * Draw the current point (larger, and in red) onto the canvas.
+     */
+    public drawCurrentPointRed() {
+        let pointInWindow = this.invWindowTransform(this.currentPoint);
+        this.ctx.fillStyle = "red";
+        this.ctx.fillRect(pointInWindow.x, this.canvas.height - pointInWindow.y, 4, 4);
+    } // drawCurrentPoint ()
+    //==================================================================================================================
 
 
     //==================================================================================================================
     /**
      * Draw the current point onto the canvas.
      */
-    private drawCurrentPoint() {
+    public drawCurrentPoint() {
         let pointInWindow = this.invWindowTransform(this.currentPoint);
         this.ctx.fillStyle = "black";
         this.ctx.fillRect(pointInWindow.x, this.canvas.height - pointInWindow.y, 2, 2);

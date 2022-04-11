@@ -7,16 +7,18 @@
  */
 export class RandomIFS {
     //==================================================================================================================
-    //==================================================================================================================
+    //============================================================================================================================================================================
     // INSTANCE METHODS
     //==================================================================================================================
     //==================================================================================================================
     /**
      * The constructor for the RandomIFS.
      */
-    constructor(canvas, table, numPts, window, useFixed) {
+    constructor(canvas, table, numPts, window, startingPoint) {
         /* The current number of iterations. */
         this.numIters = 0;
+        /* The number of points draw. */
+        this.pointsDrawn = 0;
         /* The max number of iterations. We allow the random ifs to be iterated infinitely. */
         this.maxIters = Number.MAX_VALUE;
         /* The tolerance on finding a fixed point, in pixels. */
@@ -39,7 +41,7 @@ export class RandomIFS {
         let affineTransforms = this.calibrateAffineTransforms(table.collectTransforms());
         this.transformProbs = table.collectProbabilities();
         this.matrices = RandomIFS.gatherMatrices(affineTransforms);
-        this.currentPoint = useFixed ? this.findFixedPointStochastic() : this.findNonFixedPointStochastic();
+        this.currentPoint = startingPoint == null ? this.findFixedPointStochastic() : startingPoint;
     } // constructor ()
     //==================================================================================================================
     //==================================================================================================================
@@ -49,27 +51,6 @@ export class RandomIFS {
     calculateCooldown() {
         return this.COOLDOWN;
     } // calculateCooldown ()
-    //==================================================================================================================
-    //==================================================================================================================
-    /**
-     * Randomly find a non-fixed point of a random matrix.
-     */
-    findNonFixedPointStochastic() {
-        function getRandomInt(max) { return Math.floor(Math.random() * max); }
-        while (true) {
-            let matrix = this.randomMatrix();
-            for (var i = 0; i < this.FIXED_PT_TRIES; i++) {
-                let randomPoint = { x: getRandomInt(this.canvas.width), y: getRandomInt(this.canvas.height) };
-                let randomPointWindowTransformed = this.windowTransform(randomPoint);
-                let transformedPoint = RandomIFS.applyMatrix(matrix, randomPointWindowTransformed);
-                let distX = Math.abs(randomPointWindowTransformed.x - transformedPoint.x);
-                let distY = Math.abs(randomPointWindowTransformed.y - transformedPoint.y);
-                if (distX > this.POINT_TOLERANCE && distY > this.POINT_TOLERANCE) {
-                    return randomPointWindowTransformed;
-                }
-            }
-        }
-    } // findFixedPointStochastic ()
     //==================================================================================================================
     //==================================================================================================================
     /**
@@ -112,8 +93,14 @@ export class RandomIFS {
     iterate() {
         this.numIters++;
         for (var i = 0; i < this.numPoints; i++) {
-            this.drawCurrentPoint();
+            if (this.pointsDrawn < 10) {
+                this.drawCurrentPointRed();
+            }
+            else {
+                this.drawCurrentPoint();
+            }
             this.updateCurrentPoint();
+            this.pointsDrawn++;
         }
     } // iterate ()
     //==================================================================================================================
@@ -162,6 +149,16 @@ export class RandomIFS {
             y: Math.floor((c.y / (this.b2 - this.a2)) + this.y0)
         };
     } // invWindowTransform ()
+    //==================================================================================================================
+    //==================================================================================================================
+    /**
+     * Draw the current point (larger, and in red) onto the canvas.
+     */
+    drawCurrentPointRed() {
+        let pointInWindow = this.invWindowTransform(this.currentPoint);
+        this.ctx.fillStyle = "red";
+        this.ctx.fillRect(pointInWindow.x, this.canvas.height - pointInWindow.y, 4, 4);
+    } // drawCurrentPoint ()
     //==================================================================================================================
     //==================================================================================================================
     /**

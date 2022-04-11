@@ -10,6 +10,7 @@ import { ProbabilityAffineTable } from './interfaces/affine-table.js';
 import { WindowTable } from './interfaces/window-table.js';
 import { Animator } from '../etc/animation.js';
 import { presetIFS } from '../etc/preset-ifs.js';
+import { PointCanvas } from './interfaces/point-canvas.js';
 //======================================================================================================================
 //======================================================================================================================
 // SETUP
@@ -26,8 +27,15 @@ const affineTable = new ProbabilityAffineTable(document.getElementById("affineTa
 const windowTable = new WindowTable(document.getElementById("windowTable"));
 // Get the number of points.
 let pointsSlider = document.getElementById("dotsRange");
-// Create the ifs.
-let ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds(), shouldUseFixedPoint());
+pointsSlider.value = "50";
+// Get the checkbox which determines whether or not to start with a fixed point.
+let checkBox = document.getElementById('useFixed');
+checkBox.checked = true;
+// Create the ifs and the point canvas.
+let ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds(), null);
+let pointCanvas = new PointCanvas(fractalCanvas, false);
+// Describes whether the canvas is in pick point or IFS mode.
+let pickPoint = false;
 // Setup the animation.
 let iterationsHTML = document.getElementById("numIters");
 let animateButton = document.getElementById("animate");
@@ -43,14 +51,82 @@ let animator = new Animator(ifs, animateButton, "", iterationsHTML);
  * Reset the IFS, animator, fractal canvas, and iterations tag.
  */
 function resetIFS() {
-    // If the animator is running, stop it.
     if (animator.isAnimating())
         animator.toggleAnimation();
-    ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds(), shouldUseFixedPoint());
-    animator = new Animator(ifs, animateButton, "", iterationsHTML);
     ctx.clearRect(0, 0, fractalCanvas.height, fractalCanvas.width);
     iterationsHTML.innerHTML = "Iterations: 0";
+    // If use fixed point is checked, we don't need to change the canvas state to pickPoint.
+    if (useFixedPoint()) {
+        pickPoint = false;
+        calibrateCanvasState();
+        return;
+    }
+    // Otherwise, change to pickpoint.
+    pickPoint = true;
+    calibrateCanvasState();
 } // resetIFS ()
+//==================================================================================================================
+//==================================================================================================================
+/**
+ * Calibrate the canvas state from in the IFS to picking a point, or vice versa.
+ */
+function calibrateCanvasState() {
+    if (!pickPoint) {
+        // Set the ifs; enable buttons; disable point canvas.
+        ifs = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds(), pointCanvas.getPoint());
+        animator = new Animator(ifs, animateButton, "", iterationsHTML);
+        pointCanvas.disable();
+    }
+    else {
+        // Enable the point canvas.
+        pointCanvas.reset();
+        pointCanvas.enable();
+    }
+} // swapCanvasState ()
+//==================================================================================================================
+//==================================================================================================================
+/**
+ * The function to call for the run iteration button.
+ */
+function runIterationButtonFunction() {
+    if (pickPoint && pointCanvas.isClicked()) {
+        // If in pickPoint, but the canvas has been clicked, i.e., a starting point has been picked,
+        // create the IFS and run the iteration.
+        pickPoint = false;
+        calibrateCanvasState();
+        animator.runIterationWithCooldown();
+    }
+    else if (!pickPoint) {
+        // If not in pickPoint, just run an iteration.
+        animator.runIterationWithCooldown();
+    }
+    else {
+        // If in pickPoint but the canvas has not yet been clicked, aler the user to pick a point.
+        alert("Pick a starting point before iterating.");
+    }
+} // runIterationButtonFunction ()
+//==================================================================================================================
+//==================================================================================================================
+/**
+ * The function to call for the animate button.
+ */
+function animateButtonFunction() {
+    if (pickPoint && pointCanvas.isClicked()) {
+        // If in pickPoint, but the canvas has been clicked, i.e., a starting point has been picked,
+        // create the IFS and start the animation.
+        pickPoint = false;
+        calibrateCanvasState();
+        animator.toggleAnimation();
+    }
+    else if (!pickPoint) {
+        // If not in pickPoint, just start the animation.
+        animator.toggleAnimation();
+    }
+    else {
+        // If in pickpoint but the canvas has not yet been clicked, alert the user to pick a point.
+        alert("Pick a starting point before animating.");
+    }
+} // animateButtonFunction ()
 //==================================================================================================================
 //==================================================================================================================
 /**
@@ -87,12 +163,11 @@ function setPresetIFS(preset) {
 //==================================================================================================================
 //==================================================================================================================
 /**
- * Whether to use a fixed point to start the Random IFS.
+ * Whether or not to use a fixed point for the IFS.
  */
-function shouldUseFixedPoint() {
-    let checkBox = document.getElementById('useFixed');
+function useFixedPoint() {
     return checkBox.checked;
-} // shouldUseFixedPoint ()
+} // useFixedPoint ()
 //==================================================================================================================
 //======================================================================================================================
 // END BUTTON FUNCTIONS & HELPERS
@@ -104,8 +179,8 @@ function shouldUseFixedPoint() {
 var blankTableButton = document.getElementById("blankTable");
 blankTableButton.onclick = () => { affineTable.clear(); };
 var runIterButton = document.getElementById("runIter");
-runIterButton.onclick = () => { animator.runIterationWithCooldown(); };
-animateButton.onclick = () => { animator.toggleAnimation(); };
+runIterButton.onclick = runIterationButtonFunction;
+animateButton.onclick = animateButtonFunction;
 var addRowButton = document.getElementById("addRow");
 addRowButton.onclick = () => { affineTable.addRow(); };
 var delRowButton = document.getElementById("delRow");
