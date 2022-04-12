@@ -40,9 +40,12 @@ pointsSlider.value = "50";
 let checkBox = <HTMLInputElement>document.getElementById('useFixed')!;
 checkBox.checked = true;
 
+// The HTML tag to display the mouse hover coordinates.
+let pointTag = <HTMLParagraphElement>document.getElementById("mouseCoords")!;
+
 // Create the ifs and the point canvas.
 let ifs : RandomIFS = new RandomIFS(fractalCanvas, affineTable, getNumPoints(), windowTable.getWindowBounds(), null);
-let pointCanvas = new PointCanvas(fractalCanvas, false);
+let pointCanvas = new PointCanvas(fractalCanvas, false, pointTag, windowTable);
 
 // Describes whether the canvas is in pick point or IFS mode.
 let pickPoint = false;

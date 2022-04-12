@@ -6,6 +6,7 @@
  */
 // IMPORTS
 import { Coordinate } from '../../types.js';
+import { WindowTable, WindowCoordinates } from './window-table.js';
 //======================================================================================================================
 
 
@@ -34,6 +35,13 @@ export class PointCanvas {
 
     /* Whether or not the point canvas is enabled. If not, return null as point. */
     public enabled: boolean;
+
+    /* The window table to get the current window values. */
+    private windowTable: WindowTable;
+
+    /* The HTML tag to display hover cooredinates. */
+    private coordTag: HTMLParagraphElement;
+
     //==================================================================================================================
 
 
@@ -41,9 +49,11 @@ export class PointCanvas {
     /**
      * The constructor for a PointCanvas. 
      */
-    constructor(canvas: HTMLCanvasElement, enabled: boolean) {
+    constructor(canvas: HTMLCanvasElement, enabled: boolean, coordTag: HTMLParagraphElement, windowTable: WindowTable) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d')!;
+        this.windowTable = windowTable;
+        this.coordTag = coordTag;
         this.enabled = enabled;
         this.point = { x: -1, y: -1 };
         this.initializeCanvas();
@@ -113,11 +123,36 @@ export class PointCanvas {
     private initializeCanvas() {
         let canvas_ = this;
         function parseClick(e: MouseEvent) { canvas_.parseClick(e); }
-        // Set up event listener.
+        function parseHover(e: MouseEvent) { canvas_.parseHover(e); }
+
+        // Set up event listeners for clicking and hovering.
         this.canvas.addEventListener("mousedown", function(e) {
             parseClick(e);
         }, false);
+
+        this.canvas.addEventListener("mousemove", function(e) {
+            parseHover(e);
+        }, false);
     } // initializeCanvas ()
+    //==================================================================================================================
+
+
+    //==================================================================================================================
+    /**
+     * Parse a mouse over event and change the coordinate tag's text. 
+     */
+    private parseHover(event: MouseEvent) {
+        let rect = this.canvas.getBoundingClientRect();
+        let coord = this.windowTransform({
+            x: event.clientX - rect.left,
+            y: this.canvas.height - (event.clientY - rect.top)
+        });
+
+        let x = +(coord.x / this.canvas.width).toFixed(3);
+        let y = +(coord.y / this.canvas.height).toFixed(3);
+
+        this.coordTag.innerHTML = "X: " + x + "  Y: " + y;
+    } // parseHover ()
     //==================================================================================================================
 
 
@@ -159,6 +194,22 @@ export class PointCanvas {
     private clearCanvas() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     } // drawCurrentPoint ()
+    //==================================================================================================================
+
+
+    //==================================================================================================================
+    /**
+     * Given a coordinate on the canvas, get the corresponding coordinate for the IFS' window. 
+     */
+    private windowTransform(c: Coordinate): Coordinate {
+        let window: WindowCoordinates = this.windowTable.getWindowBounds();
+        let x0 = ((-window.a1)/(window.b1-window.a1))*this.canvas.width;
+        let y0 = ((-window.a2)/(window.b2-window.a2))*this.canvas.height;
+        return {
+            x: (c.x-x0)*(window.b1-window.a1),
+            y: (c.y-y0)*(window.b2-window.a2),
+        };
+    } // windowTransform ()
     //==================================================================================================================
 
 
