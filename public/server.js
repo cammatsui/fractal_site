@@ -50,5 +50,3 @@ var server = http.createServer(
 
 // Start up the web server:
 server.listen(3000, function() { console.log("Server listening on port 3000."); } );
-
-window.open('http://localhost:3000/index.html');
