@@ -51,7 +51,7 @@ export class AffineTable {
     addRow() {
         let newRow = this.table.insertRow(this.table.rows.length);
         for (var i = 0; i < this.table.rows[0].cells.length; i++) {
-            this.styleCell(newRow.insertCell(i), "0"); // Insert a cell and style it to match the table.
+            this.styleCell(newRow.insertCell(i), ""); // Insert a cell and style it to match the table.
         }
     } // addRow ()
     //==================================================================================================================
@@ -67,7 +67,7 @@ export class AffineTable {
         // If not more than one remaining, blank out last row.
         let firstRow = this.table.rows[1];
         for (var i = 0; i < firstRow.cells.length; i++) {
-            this.styleCell(firstRow.cells[i], "0");
+            this.styleCell(firstRow.cells[i], "");
         }
     } // deleteLastRow ()
     //==================================================================================================================
